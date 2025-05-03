@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/disco07/grpc-lib/marshal"
+	"go.opentelemetry.io/otel/propagation"
 	"log"
 	"net/http"
 
@@ -15,11 +16,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func newGRPCClientConn(lc fx.Lifecycle, grpcServerConfig server.GRPCConfigServer) (*grpc.ClientConn, error) {
+func newGRPCClientConn(lc fx.Lifecycle, grpcServerConfig server.GRPCConfigServer, tmp propagation.TextMapPropagator) (*grpc.ClientConn, error) {
 	conn, err := grpc.NewClient(
 		grpcServerConfig.Host(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelgrpc.WithPropagators(tmp))),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to order service: %w", err)
