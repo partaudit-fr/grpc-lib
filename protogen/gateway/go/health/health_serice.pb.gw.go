@@ -15,7 +15,6 @@ import (
 	"net/http"
 
 	extHealth "github.com/disco07/grpc-lib/protogen/go/health"
-	extEmpty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
 	"google.golang.org/grpc"
@@ -24,6 +23,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	extEmptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Suppress "imported and not used" errors
@@ -39,16 +39,17 @@ var (
 
 func request_HealthService_Check_0(ctx context.Context, marshaler runtime.Marshaler, client extHealth.HealthServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq extEmpty.Empty
+		protoReq extEmptypb.Empty
 		metadata runtime.ServerMetadata
 	)
+	io.Copy(io.Discard, req.Body)
 	msg, err := client.Check(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
 func local_request_HealthService_Check_0(ctx context.Context, marshaler runtime.Marshaler, server extHealth.HealthServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq extEmpty.Empty
+		protoReq extEmptypb.Empty
 		metadata runtime.ServerMetadata
 	)
 	msg, err := server.Check(ctx, &protoReq)

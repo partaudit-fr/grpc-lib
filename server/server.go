@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 )
 
-func newGPRCServer(lifecycle fx.Lifecycle, logger *slog.Logger, config GRPCConfigServer) grpc.ServiceRegistrar {
+func newGPRCServer(lifecycle fx.Lifecycle, logger *slog.Logger, config GRPCConfigServer, tmp propagation.TextMapPropagator) grpc.ServiceRegistrar {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port()))
 	if err != nil {
 		logger.Warn(err.Error())
@@ -33,7 +34,7 @@ func newGPRCServer(lifecycle fx.Lifecycle, logger *slog.Logger, config GRPCConfi
 	server := grpc.NewServer(
 		keepaliveOptions,
 		keepaliveEnforcementOptions,
-		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+		grpc.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithPropagators(tmp))),
 		grpc.UnaryInterceptor(LoggingInterceptor()),
 	)
 
