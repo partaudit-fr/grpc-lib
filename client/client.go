@@ -3,10 +3,12 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/disco07/grpc-lib/marshal"
-	"go.opentelemetry.io/otel/propagation"
 	"log"
 	"net/http"
+
+	"github.com/disco07/grpc-lib/marshal"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/disco07/grpc-lib/server"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -42,14 +44,20 @@ func newServeMux() *runtime.ServeMux {
 	)
 }
 
-func startHTTPClient(lc fx.Lifecycle, mux *runtime.ServeMux, config GRPCConfigClient) {
+func startHTTPClient(lc fx.Lifecycle, mux *runtime.ServeMux, config GRPCConfigClient, tmp propagation.TextMapPropagator) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				fmt.Println("API gateway server is running on " + fmt.Sprintf(":%d", config.Port()))
+				// Wrap the handler with OpenTelemetry instrumentation and CORS
+				handler := otelhttp.NewHandler(
+					withCORS(mux),
+					config.ServiceName(),
+					otelhttp.WithPropagators(tmp),
+				)
 				if err := http.ListenAndServe(
 					fmt.Sprintf(":%d", config.Port()),
-					withCORS(mux),
+					handler,
 				); err != nil {
 					log.Fatalf("gateway server closed abruptly: %v", err)
 				}
