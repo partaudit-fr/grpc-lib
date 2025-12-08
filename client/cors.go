@@ -1,9 +1,10 @@
 package client
 
 import (
+	"net/http"
+
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
-	"net/http"
 )
 
 func withCORS(mux *runtime.ServeMux) http.Handler {
@@ -17,7 +18,7 @@ func withCORS(mux *runtime.ServeMux) http.Handler {
 			http.MethodDelete,
 			http.MethodPatch,
 		},
-		AllowedHeaders:   []string{"ACCEPT", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"ACCEPT", "Authorization", "Content-Type", "X-CSRF-Token", "traceparent", "tracestate"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
