@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/disco07/grpc-lib/marshal"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -16,13 +17,32 @@ import (
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/stats"
 )
+
+// healthCheckFilter returns a filter function that excludes health check endpoints from tracing
+func healthCheckFilter(r *http.Request) bool {
+	// Return false to exclude from tracing, true to include
+	return !strings.HasPrefix(r.URL.Path, "/health")
+}
+
+// grpcHealthCheckFilter filters out health check methods from gRPC tracing
+func grpcHealthCheckFilter(info *stats.RPCTagInfo) bool {
+	// Return false to exclude from tracing, true to include
+	if info.FullMethodName != "" && strings.Contains(info.FullMethodName, "HealthService") {
+		return false
+	}
+	return true
+}
 
 func newGRPCClientConn(lc fx.Lifecycle, grpcServerConfig server.GRPCConfigServer, tmp propagation.TextMapPropagator) (*grpc.ClientConn, error) {
 	conn, err := grpc.NewClient(
 		grpcServerConfig.Host(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelgrpc.WithPropagators(tmp))),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
+			otelgrpc.WithPropagators(tmp),
+			otelgrpc.WithFilter(grpcHealthCheckFilter),
+		)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to order service: %w", err)
@@ -50,10 +70,12 @@ func startHTTPClient(lc fx.Lifecycle, mux *runtime.ServeMux, config GRPCConfigCl
 			go func() {
 				fmt.Println("API gateway server is running on " + fmt.Sprintf(":%d", config.Port()))
 				// Wrap the handler with OpenTelemetry instrumentation and CORS
+				// Use WithFilter to exclude health check endpoints from tracing
 				handler := otelhttp.NewHandler(
 					withCORS(mux),
 					config.ServiceName(),
 					otelhttp.WithPropagators(tmp),
+					otelhttp.WithFilter(healthCheckFilter),
 				)
 				if err := http.ListenAndServe(
 					fmt.Sprintf(":%d", config.Port()),

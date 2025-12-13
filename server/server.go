@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -13,7 +14,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/stats"
 )
+
+// grpcHealthCheckFilter filters out health check methods from tracing
+func grpcHealthCheckFilter(info *stats.RPCTagInfo) bool {
+	// Return false to exclude from tracing, true to include
+	if info.FullMethodName != "" && strings.Contains(info.FullMethodName, "HealthService") {
+		return false
+	}
+	return true
+}
 
 func newGPRCServer(lifecycle fx.Lifecycle, logger *slog.Logger, config GRPCConfigServer, tmp propagation.TextMapPropagator) grpc.ServiceRegistrar {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port()))
@@ -34,7 +45,10 @@ func newGPRCServer(lifecycle fx.Lifecycle, logger *slog.Logger, config GRPCConfi
 	server := grpc.NewServer(
 		keepaliveOptions,
 		keepaliveEnforcementOptions,
-		grpc.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithPropagators(tmp))),
+		grpc.StatsHandler(otelgrpc.NewServerHandler(
+			otelgrpc.WithPropagators(tmp),
+			otelgrpc.WithFilter(grpcHealthCheckFilter),
+		)),
 		grpc.UnaryInterceptor(LoggingInterceptor()),
 	)
 
