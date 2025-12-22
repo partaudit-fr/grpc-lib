@@ -3,8 +3,8 @@ package healthcheck
 import (
 	"context"
 
-	"github.com/disco07/grpc-lib/protogen/go/health"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/partaudit-fr/grpc-lib/protogen/go/health"
 )
 
 type healthCheck struct {

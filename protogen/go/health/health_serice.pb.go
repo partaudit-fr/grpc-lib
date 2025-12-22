@@ -28,7 +28,7 @@ const file_health_health_serice_proto_rawDesc = "" +
 	"\n" +
 	"\x1ahealth/health_serice.proto\x12\x06health\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto2Y\n" +
 	"\rHealthService\x12H\n" +
-	"\x05Check\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x0f\x82\xd3\xe4\x93\x02\t\x12\a/healthB0Z.github.com/disco07/grpc-lib/protogen/go/healthb\x06proto3"
+	"\x05Check\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x0f\x82\xd3\xe4\x93\x02\t\x12\a/healthB5Z3github.com/partaudit-fr/grpc-lib/protogen/go/healthb\x06proto3"
 
 var file_health_health_serice_proto_goTypes = []any{
 	(*emptypb.Empty)(nil), // 0: google.protobuf.Empty

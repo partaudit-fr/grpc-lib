@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/disco07/grpc-lib/healthcheck"
-	"github.com/disco07/grpc-lib/protogen/go/health"
+	"github.com/partaudit-fr/grpc-lib/healthcheck"
+	"github.com/partaudit-fr/grpc-lib/protogen/go/health"
 	"go.uber.org/fx"
 )
 

@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/disco07/grpc-lib/protogen/gateway/go/health"
+	"github.com/partaudit-fr/grpc-lib/protogen/gateway/go/health"
 	"go.uber.org/fx"
 )
 
