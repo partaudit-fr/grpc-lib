@@ -1,4 +1,4 @@
-module github.com/disco07/grpc-lib
+module github.com/partaudit-fr/grpc-lib
 
 go 1.24.0
 

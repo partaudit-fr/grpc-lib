@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/disco07/grpc-lib/marshal"
+	"github.com/partaudit-fr/grpc-lib/marshal"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/propagation"
 
-	"github.com/disco07/grpc-lib/server"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/partaudit-fr/grpc-lib/server"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/fx"
 	"google.golang.org/grpc"

@@ -14,9 +14,9 @@ import (
 	"io"
 	"net/http"
 
-	extHealth "github.com/disco07/grpc-lib/protogen/go/health"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
+	extHealth "github.com/partaudit-fr/grpc-lib/protogen/go/health"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
