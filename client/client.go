@@ -17,6 +17,7 @@ import (
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/stats"
 )
 
@@ -58,9 +59,20 @@ func newGRPCClientConn(lc fx.Lifecycle, grpcServerConfig server.GRPCConfigServer
 	return conn, nil
 }
 
+// contentTypeMetadataAnnotator forwards the Content-Type header as gRPC metadata.
+// This is necessary for multipart/form-data uploads where the boundary is in the Content-Type header.
+func contentTypeMetadataAnnotator(_ context.Context, req *http.Request) metadata.MD {
+	ct := req.Header.Get("Content-Type")
+	if ct != "" {
+		return metadata.Pairs("grpcgateway-content-type", ct)
+	}
+	return nil
+}
+
 func newServeMux() *runtime.ServeMux {
 	return runtime.NewServeMux(
 		marshal.WithMultipartFormMarshaler(),
+		runtime.WithMetadata(contentTypeMetadataAnnotator),
 	)
 }
 
