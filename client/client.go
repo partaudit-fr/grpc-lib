@@ -63,6 +63,8 @@ func newGRPCClientConn(lc fx.Lifecycle, grpcServerConfig server.GRPCConfigServer
 // This is necessary for multipart/form-data uploads where the boundary is in the Content-Type header.
 func contentTypeMetadataAnnotator(_ context.Context, req *http.Request) metadata.MD {
 	ct := req.Header.Get("Content-Type")
+	fmt.Printf("[DEBUG Gateway] Content-Type header: %q\n", ct)
+	fmt.Printf("[DEBUG Gateway] All headers: %v\n", req.Header)
 	if ct != "" {
 		return metadata.Pairs("grpcgateway-content-type", ct)
 	}
