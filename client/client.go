@@ -69,11 +69,24 @@ func contentTypeMetadataAnnotator(_ context.Context, req *http.Request) metadata
 	return nil
 }
 
-func newServeMux() *runtime.ServeMux {
-	return runtime.NewServeMux(
+// serveMuxParams holds dependencies for the gRPC-Gateway ServeMux, injected via fx.
+type serveMuxParams struct {
+	fx.In
+
+	ErrorHandler runtime.ErrorHandlerFunc `optional:"true"`
+}
+
+func newServeMux(params serveMuxParams) *runtime.ServeMux {
+	opts := []runtime.ServeMuxOption{
 		marshal.WithMultipartFormMarshaler(),
 		runtime.WithMetadata(contentTypeMetadataAnnotator),
-	)
+	}
+
+	if params.ErrorHandler != nil {
+		opts = append(opts, runtime.WithErrorHandler(params.ErrorHandler))
+	}
+
+	return runtime.NewServeMux(opts...)
 }
 
 func startHTTPClient(lc fx.Lifecycle, mux *runtime.ServeMux, config GRPCConfigClient, tmp propagation.TextMapPropagator) {

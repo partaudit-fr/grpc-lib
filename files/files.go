@@ -143,6 +143,20 @@ func (f *FormData) RemoveAll() error {
 	return f.form.RemoveAll()
 }
 
+// AllValues returns all form value keys for debugging
+func (f *FormData) AllValues() map[string][]string {
+	return f.form.Value
+}
+
+// AllFileKeys returns all form file keys for debugging
+func (f *FormData) AllFileKeys() []string {
+	keys := make([]string, 0, len(f.form.File))
+	for k := range f.form.File {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // extractBoundaryFromContext retrieves the boundary from the content-type metadata.
 func extractBoundaryFromContext(ctx context.Context) (string, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
