@@ -26,10 +26,21 @@ func grpcHealthCheckFilter(info *stats.RPCTagInfo) bool {
 	return true
 }
 
-func newGPRCServer(lifecycle fx.Lifecycle, logger *slog.Logger, config GRPCConfigServer, tmp propagation.TextMapPropagator) grpc.ServiceRegistrar {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port()))
+// serverParams holds dependencies for the gRPC server, injected via fx.
+type serverParams struct {
+	fx.In
+
+	Lifecycle    fx.Lifecycle
+	Logger       *slog.Logger
+	Config       GRPCConfigServer
+	Propagator   propagation.TextMapPropagator
+	Interceptors []grpc.UnaryServerInterceptor `group:"grpc_interceptors"`
+}
+
+func newGPRCServer(params serverParams) grpc.ServiceRegistrar {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", params.Config.Port()))
 	if err != nil {
-		logger.Warn(err.Error())
+		params.Logger.Warn(err.Error())
 	}
 
 	keepaliveOptions := grpc.KeepaliveParams(keepalive.ServerParameters{
@@ -42,27 +53,31 @@ func newGPRCServer(lifecycle fx.Lifecycle, logger *slog.Logger, config GRPCConfi
 		PermitWithoutStream: true,
 	})
 
+	// Build interceptor chain: LoggingInterceptor first, then any custom interceptors
+	interceptors := []grpc.UnaryServerInterceptor{LoggingInterceptor()}
+	interceptors = append(interceptors, params.Interceptors...)
+
 	server := grpc.NewServer(
 		keepaliveOptions,
 		keepaliveEnforcementOptions,
 		grpc.StatsHandler(otelgrpc.NewServerHandler(
-			otelgrpc.WithPropagators(tmp),
+			otelgrpc.WithPropagators(params.Propagator),
 			otelgrpc.WithFilter(grpcHealthCheckFilter),
 		)),
-		grpc.UnaryInterceptor(LoggingInterceptor()),
+		grpc.ChainUnaryInterceptor(interceptors...),
 	)
 
-	lifecycle.Append(fx.Hook{
+	params.Lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				reflection.Register(server)
 
 				if err = server.Serve(listener); err != nil {
-					logger.Warn(err.Error())
+					params.Logger.Warn(err.Error())
 				}
 			}()
 
-			logger.Info(fmt.Sprintf("%s://%s", listener.Addr().Network(), listener.Addr().String()))
+			params.Logger.Info(fmt.Sprintf("%s://%s", listener.Addr().Network(), listener.Addr().String()))
 
 			return nil
 		},
