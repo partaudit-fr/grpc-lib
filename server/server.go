@@ -53,8 +53,11 @@ func newGPRCServer(params serverParams) grpc.ServiceRegistrar {
 		PermitWithoutStream: true,
 	})
 
-	// Build interceptor chain: LoggingInterceptor first, then any custom interceptors
-	interceptors := []grpc.UnaryServerInterceptor{LoggingInterceptor(params.Logger)}
+	// Build interceptor chain: Recovery first (catches panics), then Logging, then custom interceptors
+	interceptors := []grpc.UnaryServerInterceptor{
+		RecoveryInterceptor(params.Logger),
+		LoggingInterceptor(params.Logger),
+	}
 	interceptors = append(interceptors, params.Interceptors...)
 
 	server := grpc.NewServer(
