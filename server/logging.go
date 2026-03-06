@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"time"
 
 	"google.golang.org/grpc"
@@ -10,43 +10,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ANSI color codes for background
-const (
-	Reset    = "\033[0m"
-	BgGreen  = "\033[42m"
-	BgYellow = "\033[43m"
-	BgRed    = "\033[41m"
-	FgWhite  = "\033[97m"
-)
+// LoggingInterceptor logs the details of each gRPC request via slog.
+// Logs are structured and exported to any configured slog handler (stdout, SigNoz/OTEL, etc.).
+func LoggingInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
+	logger = logger.WithGroup("grpc")
 
-// getStatusColor returns the background color for a given status code
-func getStatusColor(code codes.Code) string {
-	switch {
-	case code == codes.OK:
-		return BgGreen
-	case code == codes.Canceled || code == codes.InvalidArgument || code == codes.NotFound || code == codes.AlreadyExists || code == codes.PermissionDenied:
-		return BgYellow
-	case code == codes.Internal || code == codes.Unavailable || code == codes.DataLoss || code == codes.Unauthenticated:
-		return BgRed
-	default:
-		return BgRed
-	}
-}
-
-// padStatus adds a space to the left and right of the status string
-func padStatus(status string) string {
-	return fmt.Sprintf(" %s ", status)
-}
-
-// LoggingInterceptor logs the details of each request and response
-func LoggingInterceptor() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		// Skip logging for specific methods
 		if info.FullMethod == "/health.HealthService/Check" {
 			return handler(ctx, req)
 		}
@@ -56,21 +30,27 @@ func LoggingInterceptor() grpc.UnaryServerInterceptor {
 		duration := time.Since(start)
 		code := status.Code(err)
 
-		// Get background color based on the status code
-		color := getStatusColor(code)
+		attrs := []slog.Attr{
+			slog.String("method", info.FullMethod),
+			slog.String("status", code.String()),
+			slog.Duration("duration", duration),
+		}
 
-		// Format the log message
-		statusMessage := fmt.Sprintf("%s%s%s%s", color, FgWhite, padStatus(code.String()), Reset)
-		logMessage := fmt.Sprintf(
-			"[%s] Method: %s | Duration: %v | Status: %s | Error: %v\n",
-			time.Now().Format("2006-01-02 15:04:05"),
-			info.FullMethod,
-			duration,
-			statusMessage,
-			err,
-		)
+		if err != nil {
+			attrs = append(attrs, slog.String("error", err.Error()))
+		}
 
-		fmt.Println(logMessage)
+		var level slog.Level
+		switch {
+		case code == codes.OK:
+			level = slog.LevelInfo
+		case code == codes.Internal || code == codes.Unavailable || code == codes.DataLoss:
+			level = slog.LevelError
+		default:
+			level = slog.LevelWarn
+		}
+
+		logger.LogAttrs(ctx, level, "request", attrs...)
 
 		return resp, err
 	}
