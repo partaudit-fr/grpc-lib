@@ -2,12 +2,23 @@ package apperror
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// shortMethod extracts the method name from a full gRPC method path.
+// e.g. "/form_templates.v1.FormTemplatesService/ListFormTemplates" → "ListFormTemplates"
+func shortMethod(fullMethod string) string {
+	if i := strings.LastIndex(fullMethod, "/"); i >= 0 {
+		return fullMethod[i+1:]
+	}
+	return fullMethod
+}
 
 // ErrorSanitizerInterceptor returns a gRPC UnaryServerInterceptor that transforms
 // raw error messages into user-friendly AppErrors. Internal details are logged
@@ -27,16 +38,31 @@ func ErrorSanitizerInterceptor(logger *slog.Logger, cfg *Config) grpc.UnaryServe
 		}
 
 		appErr := MapGRPCError(err, cfg)
+		grpcCode := httpStatusToGRPCCode(appErr.HTTPStatus)
 
-		if appErr.Internal != "" {
-			logger.ErrorContext(ctx, "gRPC error",
-				slog.String("method", info.FullMethod),
-				slog.String("code", string(appErr.Code)),
-				slog.String("internal", appErr.Internal),
-			)
+		attrs := []slog.Attr{
+			slog.String("method", info.FullMethod),
+			slog.String("code", string(appErr.Code)),
+			slog.String("grpc.status", grpcCode.String()),
+			slog.Int("http.status", appErr.HTTPStatus),
 		}
 
-		grpcCode := httpStatusToGRPCCode(appErr.HTTPStatus)
+		short := shortMethod(info.FullMethod)
+
+		if appErr.Internal != "" {
+			// Server-side error (5xx) — always ERROR level
+			attrs = append(attrs, slog.String("message", appErr.Message))
+			logger.LogAttrs(ctx, slog.LevelError,
+				fmt.Sprintf("[%s] %s", short, appErr.Internal),
+				attrs...,
+			)
+		} else {
+			// Client-side error (4xx) — WARN level
+			logger.LogAttrs(ctx, slog.LevelWarn,
+				fmt.Sprintf("[%s] %s", short, appErr.Message),
+				attrs...,
+			)
+		}
 
 		// Encode "CODE:message" so the gateway error handler can extract the structured code
 		return resp, status.Errorf(grpcCode, "%s:%s", appErr.Code, appErr.Message)
