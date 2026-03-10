@@ -1,0 +1,54 @@
+openapi: 3.0.0
+info:
+  title: health/health_serice.proto
+  version: version not set
+tags:
+  - name: HealthService
+paths:
+  /health:
+    get:
+      operationId: HealthService_Check
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/healthHealthCheckResponse"
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+      tags:
+        - HealthService
+components:
+  schemas:
+    healthHealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        version:
+          type: string
+        service:
+          type: string
+    protobufAny:
+      type: object
+      properties:
+        "@type":
+          type: string
+      additionalProperties: {}
+    rpcStatus:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/protobufAny"
