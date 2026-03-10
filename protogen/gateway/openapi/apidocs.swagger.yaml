@@ -1,0 +1,54 @@
+swagger: "2.0"
+info:
+  title: health/health_serice.proto
+  version: version not set
+tags:
+  - name: HealthService
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /health:
+    get:
+      operationId: HealthService_Check
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/healthHealthCheckResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - HealthService
+definitions:
+  healthHealthCheckResponse:
+    type: object
+    properties:
+      status:
+        type: string
+      version:
+        type: string
+      service:
+        type: string
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
+  rpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/protobufAny'
