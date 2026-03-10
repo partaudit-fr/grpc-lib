@@ -16,8 +16,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            type: object
-            properties: {}
+            $ref: '#/definitions/healthHealthCheckResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -25,6 +24,15 @@ paths:
       tags:
         - HealthService
 definitions:
+  healthHealthCheckResponse:
+    type: object
+    properties:
+      status:
+        type: string
+      version:
+        type: string
+      service:
+        type: string
   protobufAny:
     type: object
     properties:

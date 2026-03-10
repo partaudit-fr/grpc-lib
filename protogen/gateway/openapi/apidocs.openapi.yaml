@@ -14,8 +14,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties: {}
+                $ref: "#/components/schemas/healthHealthCheckResponse"
         default:
           description: An unexpected error response.
           content:
@@ -26,6 +25,15 @@ paths:
         - HealthService
 components:
   schemas:
+    healthHealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        version:
+          type: string
+        service:
+          type: string
     protobufAny:
       type: object
       properties:

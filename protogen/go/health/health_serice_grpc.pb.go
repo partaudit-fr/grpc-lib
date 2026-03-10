@@ -27,7 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HealthServiceClient interface {
-	Check(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Check(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error)
 }
 
 type healthServiceClient struct {
@@ -38,9 +38,9 @@ func NewHealthServiceClient(cc grpc.ClientConnInterface) HealthServiceClient {
 	return &healthServiceClient{cc}
 }
 
-func (c *healthServiceClient) Check(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *healthServiceClient) Check(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(HealthCheckResponse)
 	err := c.cc.Invoke(ctx, HealthService_Check_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (c *healthServiceClient) Check(ctx context.Context, in *emptypb.Empty, opts
 // All implementations must embed UnimplementedHealthServiceServer
 // for forward compatibility.
 type HealthServiceServer interface {
-	Check(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	Check(context.Context, *emptypb.Empty) (*HealthCheckResponse, error)
 	mustEmbedUnimplementedHealthServiceServer()
 }
 
@@ -63,7 +63,7 @@ type HealthServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedHealthServiceServer struct{}
 
-func (UnimplementedHealthServiceServer) Check(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+func (UnimplementedHealthServiceServer) Check(context.Context, *emptypb.Empty) (*HealthCheckResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Check not implemented")
 }
 func (UnimplementedHealthServiceServer) mustEmbedUnimplementedHealthServiceServer() {}
