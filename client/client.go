@@ -82,12 +82,17 @@ func newServeMux(params serveMuxParams) *runtime.ServeMux {
 	// Without EmitUnpopulated, protojson omits empty repeated/optional fields,
 	// which breaks frontends that access them directly (e.g. requirements.items).
 	// UseProtoNames stays at its default (false) to keep camelCase output across services.
-	jsonMarshaler := &runtime.JSONPb{
-		MarshalOptions: protojson.MarshalOptions{
-			EmitUnpopulated: true,
-		},
-		UnmarshalOptions: protojson.UnmarshalOptions{
-			DiscardUnknown: true,
+	// Wrap JSONPb in HTTPBodyMarshaler so that google.api.HttpBody responses
+	// (PDF downloads, file uploads) are passed through raw, while regular
+	// proto messages still get EmitUnpopulated JSON serialization.
+	jsonMarshaler := &runtime.HTTPBodyMarshaler{
+		Marshaler: &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				EmitUnpopulated: true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
 		},
 	}
 
