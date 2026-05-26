@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/stats"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // healthCheckFilter returns a filter function that excludes health check endpoints from tracing
@@ -77,7 +78,25 @@ type serveMuxParams struct {
 }
 
 func newServeMux(params serveMuxParams) *runtime.ServeMux {
+	// Default JSON marshaler — emits snake_case keys (matches the
+	// project-wide "snake_case contract" in every CLAUDE.md) and zero values.
+	// UseProtoNames forces the proto field name (snake_case) instead of the
+	// lowerCamelCase default. EmitUnpopulated keeps empty repeated/optional
+	// fields so frontends can access them directly without ?? fallbacks.
+	jsonMarshaler := &runtime.HTTPBodyMarshaler{
+		Marshaler: &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				EmitUnpopulated: true,
+				UseProtoNames:   true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		},
+	}
+
 	opts := []runtime.ServeMuxOption{
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, jsonMarshaler),
 		marshal.WithMultipartFormMarshaler(),
 		runtime.WithMetadata(contentTypeMetadataAnnotator),
 	}

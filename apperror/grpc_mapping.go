@@ -48,6 +48,13 @@ func MapGRPCError(err error, cfg *Config) *AppError {
 	}
 
 	if appErr, ok := err.(*AppError); ok {
+		// If the config has a domain-specific message for this code, use it
+		// instead of the generic default (e.g. INVALID_CREDENTIALS → "Les identifiants...")
+		if cfg != nil {
+			if msg := cfg.messageFor(appErr.Code); msg != "" {
+				appErr.Message = msg
+			}
+		}
 		return appErr
 	}
 
