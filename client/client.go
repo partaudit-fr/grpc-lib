@@ -78,17 +78,16 @@ type serveMuxParams struct {
 }
 
 func newServeMux(params serveMuxParams) *runtime.ServeMux {
-	// Default JSON marshaler that always emits empty/zero values.
-	// Without EmitUnpopulated, protojson omits empty repeated/optional fields,
-	// which breaks frontends that access them directly (e.g. requirements.items).
-	// UseProtoNames stays at its default (false) to keep camelCase output across services.
-	// Wrap JSONPb in HTTPBodyMarshaler so that google.api.HttpBody responses
-	// (PDF downloads, file uploads) are passed through raw, while regular
-	// proto messages still get EmitUnpopulated JSON serialization.
+	// Default JSON marshaler — emits snake_case keys (matches the
+	// project-wide "snake_case contract" in every CLAUDE.md) and zero values.
+	// UseProtoNames forces the proto field name (snake_case) instead of the
+	// lowerCamelCase default. EmitUnpopulated keeps empty repeated/optional
+	// fields so frontends can access them directly without ?? fallbacks.
 	jsonMarshaler := &runtime.HTTPBodyMarshaler{
 		Marshaler: &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				EmitUnpopulated: true,
+				UseProtoNames:   true,
 			},
 			UnmarshalOptions: protojson.UnmarshalOptions{
 				DiscardUnknown: true,
